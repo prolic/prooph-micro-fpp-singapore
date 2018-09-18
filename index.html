@@ -1,0 +1,659 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>prooph/micro + FPP - less is more</title>
+
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/sky.css">
+    <link rel="stylesheet" href="css/custom.css">
+
+    <!-- Theme used for syntax highlighting of code -->
+    <link rel="stylesheet" href="lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+</head>
+<body>
+<div class="reveal">
+    <div class="slides">
+        <section>
+            <h2>prooph/micro + FPP</h2>
+            <h2>less is more</h2>
+            <img
+                    src="assets/img/prooph-logo.png"
+                    alt="Prooph components"
+                    border="0"
+                    style="margin: -8px;"
+            />
+        </section>
+
+        <section>
+            <img src="assets/img/me.png" alt="me" width="200" height="200">
+            <h4>Sascha-Oliver Prolic</h4>
+            <p>prooph components maintainer</p>
+            <p>Also:
+                <ul>
+                    <li>HumusAmqp</li>
+                    <li>FPP</li>
+                    <li>zfr-oauth2-server</li>
+                    <li>zfc-rbac</li>
+                </ul>
+            </p>
+        </section>
+
+        <section>
+            <img src="assets/img/prooph_components.png">
+        </section>
+
+        <section>
+            <img src="assets/img/prooph_org.png">
+        </section>
+
+        <section>
+            <h2>prooph/micro</h2>
+            functional event sourced microservices
+        </section>
+
+        <section>
+            <table>
+                <tr>
+                    <td>more:</td>
+                    <td><b>Event Sourcing</b></td>
+                </tr>
+                <tr>
+                    <td>less:</td>
+                    <td><b><del>OOP MVC DIC Modules/Bundles</del></b></td>
+                </tr>
+            </table>
+        </section>
+
+        <section>
+            <h2>Event Sourcing</h2>
+            <blockquote>Event Sourcing ensures that all changes to application state are stored as a sequence of events.</blockquote>
+            <p>(Martin Fowler)</p>
+        </section>
+
+        <section>
+            <img src="assets/img/event_vs_state.png">
+        </section>
+
+        <section>
+            <h2>Event-Store</h2>
+            <img src="assets/img/command-event-event-store.png"/>
+        </section>
+
+        <section>
+            <h2>How to query an event stream efficiently?</h2>
+        </section>
+
+        <section>
+            <h3><b>C</b> ommand<br><b>Q</b> uery<br><b>R</b> esponsibility<br><b>S</b> egregation</h3>
+        </section>
+
+        <section>
+            <h3>CRUD</h3>
+            <img src="assets/img/crud.png"/>
+        </section>
+
+        <section>
+            <h3>CQRS</h3>
+            <img src="assets/img/cqrs.png"/>
+        </section>
+
+        <section>
+            <img src="assets/img/projector.png">
+        </section>
+
+        <section>
+            <p>Check prooph/event-store docs for more information about projections</p>
+        </section>
+
+        <section>
+            <h2>Why ???</h2>
+        </section>
+
+        <section>
+            <h2>Consider an online shop with cart</h2>
+            <img src="assets/img/cart-with-events.png"/>
+        </section>
+
+        <section>
+            <h2>A structural view of an order</h2>
+            <img src="assets/img/cart-model.png"/>
+        </section>
+
+        <section>
+            <h2>New task</h2>
+            <p>I need all items that were removed from the cart 5 mins before checkout.</p>
+        </section>
+
+        <section>
+            <h2>Event-Sourcing Pros</h2>
+            <p>Append only (very fast)</p>
+            <p>Immutable</p>
+            <p>No joins</p>
+            <p>Complete history</p>
+        </section>
+
+        <section>
+            <h2>Event-Sourcing Cons</h2>
+            <p>Not really</p>
+            <p>Overkill for simple CRUD apps</p>
+        </section>
+
+        <section>
+            <table>
+                <thead>
+                    <tr>
+                        <td colspan="2">
+                            prooph/micro
+                        </td>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>uses:</td>
+                        <td>phunkie & prooph event-store</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h1>OOP approach</h1>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ```php
+                class Todo {
+                    ...
+                    public function markAsDone(): void {
+                        if ($this->status->isDone()) {
+                            throw new TodoMarkedAlreadyAsDoneException();
+                        }
+
+                        $this->recordThat(TodoWasMarkedAsDone::with($this->uuid);
+                    }
+                }
+                ```
+            </textarea>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ```php
+                class Todo {
+                    ...
+                    protected function recordThat(AggregateChanged $event): void {
+                        $this->version += 1;
+                        $this->recordedEvents[] = $event;
+                        $this->apply($event);
+                    }
+                }
+                ```
+            </textarea>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ```php
+                class Todo {
+                    ...
+                    protected function apply(AggregateChanged $e): void {
+                        ...
+                        if ($e instanceof TodoMarkedAsDone) {
+                            $this->status = TodoStatus::done();
+                            return;
+                        }
+                    }
+                }
+                ```
+            </textarea>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ```php
+                class MarkTodoAsDoneHandler {
+                    private $todoCollection;
+                    public function __construct(TodoCollection $collection) {
+                        $this->todoCollection = $collection;
+                    }
+                    public function __invoke(MarkTodoAsDone $command): void {
+                        $todo = $this->todoCollection->get($command->uuid());
+                        $todo->markAsDone();
+                        $this->todoCollection->save($todo);
+                    }
+                }
+                ```
+            </textarea>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ```php
+                class MarkTodoAsDoneHandlerFactory {
+                    public function __invoke(Container $container) {
+                        return new MarkTodoAsDoneHandler(
+                            $container->get(TodoCollection::class)
+                        );
+                    }
+                }
+                ```
+            </textarea>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ```php
+                class TodoController {
+                    ...
+                    public function markAsDone(Request $request): Response {
+                        $command = MarkTodoAsDone::fromRequest($request);
+
+                        $this->commandBus->dispatch($command);
+
+                        return new EmptyResponse(202);
+                    }
+                }
+                ```
+            </textarea>
+        </section>
+
+        <section>
+            <h1>Boilerplate!</h1>
+        </section>
+
+        <section>
+            <h1>functional approach</h1>
+        </section>
+
+        <section>
+            <img src="assets/img/stack.png">
+        </section>
+
+        <section>
+            <img src="assets/img/nginx-php-psql.png">
+        </section>
+
+        <section>
+            <img src="assets/img/greg-young.png">
+        </section>
+
+        <section>
+            <h2>Compose all the things</h2>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ```php
+                $pipe = function () use (
+                    $message,
+                    $handleCommand,
+                    $enrichEvents,
+                    $persistEvents,
+                    $publishEvents
+                ) {
+                    return compose(
+                        $handleCommand,
+                        $enrichEvents,
+                        $persistEvents,
+                        $publishEvents
+                    )($message);
+                };
+                return Attempt($pipe);
+                ```
+            </textarea>
+        </section>
+
+        <section>
+            <img src="assets/img/phunkie.png">
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ```php
+                $result = $pipe(
+                    new ChangeUserName([
+                        'id' => '1',
+                        'name' => 'Sascha'
+                    ])
+                );
+
+                showResult($result);
+                ```
+            </textarea>
+        </section>
+
+        <section>
+            <h2>Let's do it</h2>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ```php
+                $pipe = function () use (
+                    $message,
+                    $handleCommand, // <-- this !!
+                    $enrichEvents,
+                    $persistEvents,
+                    $publishEvents
+                ) {
+                    return compose(
+                        $handleCommand,
+                        $enrichEvents,
+                        $persistEvents,
+                        $publishEvents
+                    )($message);
+                };
+                return Attempt($pipe);
+                ```
+            </textarea>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ```php
+                function markTodoAsDone(
+                    callable $stateResolver,
+                    MarkTodoAsDone $command
+                ): array {
+                    $state = $stateResolver();
+
+                    if ($state['status'] === 'done') {
+                        throw new TodoMarkedAlreadyAsDoneException();
+                    }
+
+                    return [TodoWasMarkedAsDone::with($state['uuid'])];
+                }
+                ```
+            </textarea>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ```php
+                function apply($state, Message ...$events): array
+                {
+                    if (null === $state) {
+                        $state = [];
+                    }
+                    foreach ($events as $event) {
+                        ...
+                        if ($event instanceof TodoWasMarkedAsDone) {
+                            $state['status'] = 'done';
+                            break;
+                        }
+                    }
+                    return $state;
+                }
+                ```
+            </textarea>
+        </section>
+
+        <section>
+            <h2>See the difference?</h2>
+        </section>
+
+        <section>
+            <ul>
+                <li>No Handler classes</li>
+                <li>No factories</li>
+                <li>No controllers</li>
+                <li>No DI containers</li>
+                <li>No aggregate repository</li>
+                <li>Much less boilerplate</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>prolic/fpp</h2>
+            <p>Functional PHP Preprocessor</p>
+            <p>Immutable Data Type Generator</p>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ## Constructor args
+
+                ```php
+                class User
+                {
+                    public function __construct(
+                        string $firstname,
+                        string $lastName
+                    ) {
+                        ...
+                    }
+                }
+                ```
+            </textarea>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ## Constructor args
+
+                ```php
+                class User
+                {
+                    public function __construct(
+                        string $firstname,
+                        string $lastName,
+                        string $street,
+                        string $city,
+                        string $zipCode,
+                        string $country
+                    ) {
+                        ...
+                    }
+                }
+                ```
+            </textarea>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ## Value objects
+
+                ```php
+                class User
+                {
+                    public function __construct(
+                        FirstName $firstName,
+                        LastName $lastName,
+                        Address $address
+                    ) {
+                        ...
+                    }
+                }
+                ```
+            </textarea>
+        </section>
+
+        <section>
+            <h2>Boilerplate!</h2>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ```
+                namespace Foo;
+
+                data FirstName = String deriving (Equals);
+                data LastName = String deriving (Equals);
+                data Street = String deriving (Equals);
+                data City = String deriving (Equals);
+                data ZipCode = String deriving (Equals);
+                data Country = String deriving (Equals);
+                ```
+            </textarea>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ```
+                namespace Foo;
+
+                data Address = Address {
+                    Street $street,
+                    City $city,
+                    ZipCode $zipCode,
+                    Country $country
+                } deriving (ToArray, FromArray, Equals);
+
+                data Person = Person {
+                    FirstName $firstName,
+                    LastName $lastName,
+                    Address $address
+                } deriving (ToArray, FromArray, Equals);
+                ```
+            </textarea>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ```
+                namespace Foo\Command;
+
+                data PostTodo = PostTodo {
+                    Text $text,
+                    Person $author
+                } deriving (Command);
+
+                data TodoPosted = TodoPosted {
+                    Text $text,
+                    Person $author
+                } deriving (DomainEvent);
+                ```
+            </textarea>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ## Multiple constructors and conditions
+
+                ```
+                data Person = Person {FirstName $firstName, LastName $lastName}
+                            | Boss {FirstName $firstName, LastName $lastName}
+                    where
+                    Person:
+                        | strlen($firstName->toString()) === 0
+                            => 'first name too short'
+                        | strlen($lastName->toString()) === 0
+                            => 'last name too short'
+                    Boss:
+                        | strlen($firstName->toString()) < 5
+                            => 'first name too short'
+                        | strlen($lastName->toString()) < 5
+                            => 'last name too short';
+                ```
+            </textarea>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ## Let's generate the code
+
+                ```
+                php bin/fpp.php definitions.fpp
+                ```
+            </textarea>
+        </section>
+
+        <section>
+            <h2>Stats</h2>
+            <p>32 lines of fpp code</p>
+            <p>483 lines of PHP code</p>
+            <p>No need to write tons of tests</p>
+        </section>
+
+        <section>
+            <h2>prooph/micro & fpp</h2>
+            <h3>the perfect combo</h3>
+            prooph/micro -> functional programming<br>
+            functional programming -> immutable data types<br>
+            fpp -> immutable data types
+        </section>
+
+        <section>
+            <h2>What's next?</h2>
+        </section>
+
+        <section>
+            <p>prooph/micro + amphp</p>
+            <p>prooph/micro + reactphp</p>
+        </section>
+
+        <section>
+            <p>prooph/micro + zend expressive + swoole</p>
+        </section>
+
+        <section>
+            <p>Response times of 1ms</p>
+            <p>Yes really!</p>
+        </section>
+
+        <section>
+            <h2>Further reading</h2>
+        </section>
+
+        <section>
+            <ul>
+                <li>getprooph.org</li>
+                <li>github.com/prooph/proophessor-do<br/>(CQRS & ES in action, OOP style, not micro)</li>
+                <li>join the community: gitter.im/prooph/improoph</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>The blue book</h2>
+            <img src="assets/img/blue_book.jpg">
+        </section>
+
+        <section>
+            <h2>The red book</h2>
+            <img src="assets/img/red_book.jpg">
+        </section>
+
+        <section>
+            <h1>Thank You!</h1>
+        </section>
+
+        <section>
+            <h2>Contact</h2>
+            <p>Github: @prolic</p>
+            <p>Twitter: @sasaprolic</p>
+            <p>prooph-chat: gitter.im/prooph/improoph</p>
+        </section>
+    </div>
+</div>
+
+<script src="lib/js/head.min.js"></script>
+<script src="js/reveal.js"></script>
+
+<script>
+    // More info about config & dependencies:
+    // - https://github.com/hakimel/reveal.js#configuration
+    // - https://github.com/hakimel/reveal.js#dependencies
+    Reveal.initialize({
+        dependencies: [
+            { src: 'plugin/markdown/marked.js' },
+            { src: 'plugin/markdown/markdown.js' },
+            { src: 'plugin/notes/notes.js', async: true },
+            { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+        ]
+    });
+</script>
+</body>
+</html>
